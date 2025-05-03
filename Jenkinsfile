@@ -1,40 +1,35 @@
 pipeline {
     agent any
-    environment {
-        // Customize these:
-        DOCKER_IMAGE = "ezengesh/myapp"
-        DOCKER_REGISTRY = "https://index.docker.io/v1/"
-    }
     
     stages {
-        // Stage 1: Checkout code from Git
         stage('Checkout') {
             steps {
-                git branch: 'main', 
-                url: 'https://github.com/ezengesh/your-repo.git'
+                checkout scm
             }
         }
-
-        // Stage 2: Build Docker image
-        stage('Build') {
+        
+        stage('Setup Python') {
             steps {
-                script {
-                    docker.build("${DOCKER_IMAGE}:${env.BUILD_ID}")
-                }
+                sh 'python -m venv venv'
+                // Using dot notation instead of source
+                sh '. venv/bin/activate && pip install -r requirements.txt'
             }
         }
-
-        // Stage 3: Push to Docker Registry
-        stage('Push') {
+        
+        stage('Test') {
             steps {
-                script {
-                    docker.withRegistry(DOCKER_REGISTRY, 'docker-hub-creds') {
-                        docker.image("${DOCKER_IMAGE}:${env.BUILD_ID}").push()
-                        // Optional: Also push as 'latest'
-                        docker.image("${DOCKER_IMAGE}:${env.BUILD_ID}").push('latest')
-                    }
-                }
+                // Using the full path to ensure activation
+                sh '''
+                . venv/bin/activate
+                python manage.py test
+                '''
             }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()  // Clean up workspace after build
         }
     }
 }
