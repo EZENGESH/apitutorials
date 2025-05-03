@@ -11,14 +11,20 @@ pipeline {
         stage('Setup Python') {
             steps {
                 sh 'python -m venv venv'
-                sh 'source venv/bin/activate && pip install -r requirements.txt'
+                sh '. venv/bin/activate && pip install -r requirements.txt'
             }
         }
         
         stage('Test') {
             steps {
-                sh 'source venv/bin/activate && python manage.py test'
+                sh '. venv/bin/activate && python manage.py test'
             }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()  // Clean workspace after build
         }
     }
 }
